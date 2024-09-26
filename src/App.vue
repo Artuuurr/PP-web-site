@@ -30,15 +30,19 @@
 			</div>
 		</div>
 
-		<div style="margin-bottom: 20px">
+		<div style="margin-bottom: 20px;">
 			<Line :data="salesData" :options="options" />
 		</div>
 
 		<!-- Два столбца с таблицами -->
 		<div
-			style="display: flex; justify-content: space-between; margin-bottom: 20px"
+			style="
+				display: flex;
+				justify-content: space-between;
+				margin-bottom: 20px;
+			"
 		>
-			<div style="flex: 1; margin-right: 10px">
+			<div style="flex: 1; margin-right: 10px;">
 				<h3>Таблица: Экспоненциально сглаженный ряд, Тренд, Сезонность</h3>
 				<div class="table-container">
 					<table>
@@ -67,7 +71,7 @@
 				</div>
 			</div>
 
-			<div style="flex: 1; margin-left: 10px">
+			<div style="flex: 1; margin-left: 10px;">
 				<h3>Таблица: Прогноз по методу Хольта</h3>
 				<div class="table-container">
 					<table>
@@ -89,18 +93,18 @@
 		</div>
 
 		<!-- Три графика в линию -->
-		<div style="display: flex; justify-content: space-between">
-			<div style="flex: 1; margin-right: 10px">
+		<div style="display: flex; justify-content: space-between;">
+			<div style="flex: 1; margin-right: 10px;">
 				<h3>Сглаженный экспоненциальный ряд</h3>
 				<Line :data="smoothedData" :options="smoothedOptions" />
 			</div>
 
-			<div style="flex: 1; margin-right: 10px">
+			<div style="flex: 1; margin-right: 10px;">
 				<h3>Тренд</h3>
 				<Line :data="trendData" :options="trendOptions" />
 			</div>
 
-			<div style="flex: 1">
+			<div style="flex: 1;">
 				<h3>Сезонность</h3>
 				<Line :data="seasonalityData" :options="seasonalityOptions" />
 			</div>
@@ -214,12 +218,13 @@ export default {
 		}
 
 		const updateSalesData = () => {
-			const realSales = generateTestData()
-			const totalDataPoints = realSales.length
+			// Генерация одинаковых тестовых данных для текущих и прогнозируемых значений
+			const sales = generateTestData()
+			const totalDataPoints = sales.length
 
 			// Генерация меток в зависимости от выбранного периода
 			salesData.value.labels = Array.from(
-				{ length: totalDataPoints },
+				{ length: totalDataPoints + 30 }, // Увеличиваем длину на 30 для прогноза
 				(_, i) => {
 					if (selectedPeriod.value === 'day') return `День ${i + 1}`
 					if (selectedPeriod.value === 'month')
@@ -227,46 +232,77 @@ export default {
 				}
 			)
 
-			salesData.value.datasets[0].data = realSales
+			// Текущие продажи
+			salesData.value.datasets[0].data = sales
 
-			// Прогнозируемые продажи
-			const lastSale = realSales[realSales.length - 1]
-			const forecastedSales = Array.from(
-				{ length: forecastLength },
-				(_, index) => Math.floor(lastSale * Math.pow(1.1, index + 1))
-			)
-			salesData.value.datasets[1].data = [...realSales, ...forecastedSales]
+			// Прогнозируемые продажи (добавляем 30 дополнительных данных)
+			const lastSale = sales[sales.length - 1]
+			const forecastedSales = [
+				lastSale + 30,
+				lastSale + 1,
+				lastSale + 50,
+				lastSale + 20,
+				lastSale + 15,
+				lastSale + 40,
+				lastSale + 5,
+				lastSale + 70,
+				lastSale - 5,
+				lastSale - 10,
+				lastSale - 15,
+				lastSale - 60,
+				lastSale - 5,
+				lastSale + 0,
+				lastSale + 5,
+				lastSale + 10,
+				lastSale + 15,
+				lastSale + 80,
+				lastSale + 15,
+				lastSale + 10,
+				lastSale + 5,
+				lastSale + 60,
+				lastSale - 5,
+				lastSale - 10,
+				lastSale - 15,
+				lastSale - 40,
+				lastSale - 5,
+				lastSale + 0,
+				lastSale + 5,
+				lastSale + 100,
+				lastSale + 15,
+			]
+			salesData.value.datasets[1].data = [...sales, ...forecastedSales]
 
 			// Данные для других графиков
 			smoothedData.value.labels = salesData.value.labels
-			smoothedData.value.datasets[0].data = realSales.map(
-				sale => sale * 0.8 + 20
-			)
+			smoothedData.value.datasets[0].data = sales.map(sale => sale * 0.8 + 20)
 
 			trendData.value.labels = salesData.value.labels
-			trendData.value.datasets[0].data = realSales.map(
+			trendData.value.datasets[0].data = sales.map(
 				(sale, index) => sale + (index % 30) * 5
 			)
 
 			seasonalityData.value.labels = salesData.value.labels
-			seasonalityData.value.datasets[0].data = realSales.map(
+			seasonalityData.value.datasets[0].data = sales.map(
 				sale => sale * Math.sin((Math.PI / 365) * (sale % 365))
 			)
 
 			// Прогноз по методу Хольта
-			forecastData.value = Array.from({ length: forecastLength }, (_, p) => {
+			forecastData.value = Array.from({ length: 30 }, (_, p) => {
 				const Lt = smoothedData.value.datasets[0].data[totalDataPoints - 1]
 				const Tt = trendData.value.datasets[0].data[totalDataPoints - 1]
 				return Lt + p * Tt
 			})
 		}
-
 		const getMonth = index => Math.floor(index / 30) + 1
 		const getDay = index => (index % 30) + 1
 
 		watch([selectedPeriod, periodCount], updateSalesData)
 
 		updateSalesData()
+
+		watch(periodCount, () => {
+			updateSalesData()
+		})
 
 		return {
 			salesData,
