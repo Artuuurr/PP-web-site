@@ -1,320 +1,84 @@
 <template>
-	<div>
-		<h2>Прогноз продаж методом Хольта-Винтерса</h2>
-
-		<div
-			style="
-				display: flex;
-				align-items: center;
-				justify-content: space-between;
-				margin-bottom: 20px;
-			"
-		>
-			<div>
-				<label for="period">Выберите период:</label>
-				<select v-model="selectedPeriod" id="period">
-					<option value="day">День</option>
-					<option value="month">Месяц</option>
-				</select>
+	<div class="container">
+		<div>
+			<div class="titelForBlock">Прогноз продаж методом Хольта-Винтерса</div>
+			<div class="forecastLine">
+				<Line :data="holtWintersData" :options="holtWintersOptions" />
 			</div>
-			<div>
-				<label for="periodCount">Количество периодов:</label>
-				<input
-					type="range"
-					id="periodCount"
-					v-model="periodCount"
-					min="1"
-					max="30"
-				/>
-				<span>{{ periodCount }}</span>
-			</div>
-		</div>
-
-		<div style="margin-bottom: 20px;">
-			<Line :data="salesData" :options="options" />
-		</div>
-
-		<!-- Два столбца с таблицами -->
-		<div
-			style="
-				display: flex;
-				justify-content: space-between;
-				margin-bottom: 20px;
-			"
-		>
-			<div style="flex: 1; margin-right: 10px;">
-				<h3>Таблица: Экспоненциально сглаженный ряд, Тренд, Сезонность</h3>
-				<div class="table-container">
-					<table>
-						<thead>
-							<tr>
-								<th>Месяц</th>
-								<th>День</th>
-								<th>Lt = Экспоненциально сглаженный ряд</th>
-								<th>Tt = Значение тренда</th>
-								<th>St-s = Коэффициент сезонности предыдущего периода</th>
-							</tr>
-						</thead>
-						<tbody>
-							<tr
-								v-for="(value, index) in salesData.datasets[0].data"
-								:key="index"
-							>
-								<td>{{ getMonth(index) }}</td>
-								<td>{{ getDay(index) }}</td>
-								<td>{{ smoothedData.datasets[0].data[index] }}</td>
-								<td>{{ trendData.datasets[0].data[index] }}</td>
-								<td>{{ seasonalityData.datasets[0].data[index] }}</td>
-							</tr>
-						</tbody>
-					</table>
+			<div class="downLine">
+				<div class="forecastLine2">
+					<h3>Сглаженный экспоненциальный ряд</h3>
+					<Line :data="sesData" :options="sesOptions" />
 				</div>
-			</div>
-
-			<div style="flex: 1; margin-left: 10px;">
-				<h3>Таблица: Прогноз по методу Хольта</h3>
-				<div class="table-container">
-					<table>
-						<thead>
-							<tr>
-								<th>p = Номер периода</th>
-								<th>Ŷt+p = Lt + p * Tt</th>
-							</tr>
-						</thead>
-						<tbody>
-							<tr v-for="p in periodCount" :key="p">
-								<td>{{ p }}</td>
-								<td>{{ forecastData[p - 1] }}</td>
-							</tr>
-						</tbody>
-					</table>
+				<div class="forecastLine2">
+					<h3>Тренд</h3>
+					<Line :data="trendData" :options="trendOptions" />
 				</div>
-			</div>
-		</div>
-
-		<!-- Три графика в линию -->
-		<div style="display: flex; justify-content: space-between;">
-			<div style="flex: 1; margin-right: 10px;">
-				<h3>Сглаженный экспоненциальный ряд</h3>
-				<Line :data="smoothedData" :options="smoothedOptions" />
-			</div>
-
-			<div style="flex: 1; margin-right: 10px;">
-				<h3>Тренд</h3>
-				<Line :data="trendData" :options="trendOptions" />
-			</div>
-
-			<div style="flex: 1;">
-				<h3>Сезонность</h3>
-				<Line :data="seasonalityData" :options="seasonalityOptions" />
+				<div class="forecastLine2">
+					<h3>Сезонность</h3>
+					<Line :data="sesonData" :options="sesonOptions" />
+				</div>
 			</div>
 		</div>
 	</div>
 </template>
 
-<script>
-import { ref, watch } from 'vue'
-import { Line } from 'vue-chartjs'
+<script lang="ts">
 import {
 	Chart as ChartJS,
+	CategoryScale,
+	LinearScale,
+	PointElement,
+	LineElement,
 	Title,
 	Tooltip,
 	Legend,
-	LineElement,
-	PointElement,
-	LinearScale,
-	CategoryScale,
 } from 'chart.js'
+import { Line } from 'vue-chartjs'
+import {
+	data as holtWintersData,
+	options as holtWintersOptions,
+} from './components/holtWintersLine.vue'
+
+import {
+	data as sesData,
+	options as sesOptions,
+} from './components/sesLine.vue'
+import {
+	data as sesonData,
+	options as sesonOptions,
+} from './components/seasonLine.vue'
+import {
+	data as trendData,
+	options as trendOptions,
+} from './components/trendLine.vue'
 
 ChartJS.register(
+	CategoryScale,
+	LinearScale,
+	PointElement,
+	LineElement,
 	Title,
 	Tooltip,
-	Legend,
-	LineElement,
-	PointElement,
-	LinearScale,
-	CategoryScale
+	Legend
 )
 
 export default {
-	components: { Line },
-	setup() {
-		const selectedPeriod = ref('day')
-		const periodCount = ref(30)
-		const forecastLength = 10
+	name: 'App',
+	components: {
+		Line,
+	},
 
-		const generateTestData = () => {
-			const sales = []
-			// Два месяца данных (60 дней)
-			for (let i = 0; i < 60; i++) {
-				sales.push(Math.floor(Math.random() * 200) + 50)
-			}
-			return sales
-		}
-
-		const salesData = ref({
-			labels: [],
-			datasets: [
-				{
-					label: 'Текущие продажи',
-					data: [],
-					borderColor: 'blue',
-					fill: false,
-				},
-				{
-					label: 'Прогнозируемые продажи',
-					data: [],
-					borderColor: 'red',
-					fill: false,
-				},
-			],
-		})
-
-		const smoothedData = ref({
-			labels: [],
-			datasets: [
-				{
-					label: 'Сглаженный экспоненциальный ряд',
-					data: [],
-					borderColor: 'green',
-					fill: false,
-				},
-			],
-		})
-
-		const trendData = ref({
-			labels: [],
-			datasets: [
-				{
-					label: 'Тренд',
-					data: [],
-					borderColor: 'orange',
-					fill: false,
-				},
-			],
-		})
-
-		const seasonalityData = ref({
-			labels: [],
-			datasets: [
-				{
-					label: 'Сезонность',
-					data: [],
-					borderColor: 'purple',
-					fill: false,
-				},
-			],
-		})
-
-		const forecastData = ref([])
-
-		const options = {
-			responsive: true,
-			plugins: {
-				legend: {
-					display: true,
-				},
-			},
-		}
-
-		const updateSalesData = () => {
-			// Генерация одинаковых тестовых данных для текущих и прогнозируемых значений
-			const sales = generateTestData()
-			const totalDataPoints = sales.length
-
-			// Генерация меток в зависимости от выбранного периода
-			salesData.value.labels = Array.from(
-				{ length: totalDataPoints + 30 }, // Увеличиваем длину на 30 для прогноза
-				(_, i) => {
-					if (selectedPeriod.value === 'day') return `День ${i + 1}`
-					if (selectedPeriod.value === 'month')
-						return `Месяц ${Math.floor(i / 30) + 1}`
-				}
-			)
-
-			// Текущие продажи
-			salesData.value.datasets[0].data = sales
-
-			// Прогнозируемые продажи (добавляем 30 дополнительных данных)
-			const lastSale = sales[sales.length - 1]
-			const forecastedSales = [
-				lastSale + 30,
-				lastSale + 1,
-				lastSale + 50,
-				lastSale + 20,
-				lastSale + 15,
-				lastSale + 40,
-				lastSale + 5,
-				lastSale + 70,
-				lastSale - 5,
-				lastSale - 10,
-				lastSale - 15,
-				lastSale - 60,
-				lastSale - 5,
-				lastSale + 0,
-				lastSale + 5,
-				lastSale + 10,
-				lastSale + 15,
-				lastSale + 80,
-				lastSale + 15,
-				lastSale + 10,
-				lastSale + 5,
-				lastSale + 60,
-				lastSale - 5,
-				lastSale - 10,
-				lastSale - 15,
-				lastSale - 40,
-				lastSale - 5,
-				lastSale + 0,
-				lastSale + 5,
-				lastSale + 100,
-				lastSale + 15,
-			]
-			salesData.value.datasets[1].data = [...sales, ...forecastedSales]
-
-			// Данные для других графиков
-			smoothedData.value.labels = salesData.value.labels
-			smoothedData.value.datasets[0].data = sales.map(sale => sale * 0.8 + 20)
-
-			trendData.value.labels = salesData.value.labels
-			trendData.value.datasets[0].data = sales.map(
-				(sale, index) => sale + (index % 30) * 5
-			)
-
-			seasonalityData.value.labels = salesData.value.labels
-			seasonalityData.value.datasets[0].data = sales.map(
-				sale => sale * Math.sin((Math.PI / 365) * (sale % 365))
-			)
-
-			// Прогноз по методу Хольта
-			forecastData.value = Array.from({ length: 30 }, (_, p) => {
-				const Lt = smoothedData.value.datasets[0].data[totalDataPoints - 1]
-				const Tt = trendData.value.datasets[0].data[totalDataPoints - 1]
-				return Lt + p * Tt
-			})
-		}
-		const getMonth = index => Math.floor(index / 30) + 1
-		const getDay = index => (index % 30) + 1
-
-		watch([selectedPeriod, periodCount], updateSalesData)
-
-		updateSalesData()
-
-		watch(periodCount, () => {
-			updateSalesData()
-		})
-
+	data() {
 		return {
-			salesData,
-			options,
-			smoothedData,
+			holtWintersData,
+			holtWintersOptions,
+			sesData,
+			sesOptions,
+			sesonData,
+			sesonOptions,
 			trendData,
-			seasonalityData,
-			forecastData,
-			selectedPeriod,
-			periodCount,
-			getMonth,
-			getDay,
+			trendOptions,
 		}
 	},
 }
@@ -329,12 +93,6 @@ td {
 	border: 1px solid #ccc;
 	padding: 10px;
 	text-align: left;
-}
-th {
-}
-h2,
-h3 {
-	text-align: center;
 }
 .table-container {
 	max-height: 565px;
