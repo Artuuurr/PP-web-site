@@ -1,20 +1,6 @@
 <script>
-import { allAmounts, allMonths } from './holtWintersLine.vue'
-import { smoothedExponentialSeries } from './sesLine.vue'
-
-let previousExponentiallySmoothedSeries = allAmounts[0] // изменяемый
-let trendSmoothingCoefficient = 0.9 // не изменяемый
-let previousTrendValue = null // изменяемый
-
-export let trendValue =
-	trendSmoothingCoefficient *
-		(smoothedExponentialSeries[1] - previousExponentiallySmoothedSeries) +
-	(1 - trendSmoothingCoefficient) * previousTrendValue
-
-console.log('Тренд:', trendValue)
-
 export const data = {
-	labels: allMonths,
+	labels: [],
 	datasets: [
 		{
 			label: 'Тренд',

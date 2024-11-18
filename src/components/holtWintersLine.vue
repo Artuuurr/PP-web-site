@@ -1,32 +1,14 @@
 <script>
-import { sales } from './salesData.vue'
-
-export let allAmounts = []
-export let allMonths = []
-
-function getSales(sales) {
-	sales.forEach(oneYear => {
-		oneYear.months.forEach(oneMonth => {
-			allMonths.push(
-				`${oneMonth.month
-					.toString()
-					.padStart(2, '0')}.${oneYear.salesYear.toString().slice(-2)}`
-			)
-			allAmounts.push(oneMonth.amount)
-		})
-	})
-}
-
-getSales(sales)
+import { allAmounts, allMonths } from '../controllers/holtWintersController.vue'
 
 export const data = {
-	labels: allMonths,
+	labels: [],
 	datasets: [
 		{
 			label: 'Продажи',
 			borderColor: 'rgb(34, 110, 223)',
 			backgroundColor: 'rgba(34, 110, 223, 0.5)',
-			data: allAmounts,
+			data: [],
 		},
 		{
 			label: 'Прогноз',

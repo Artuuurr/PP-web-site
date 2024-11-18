@@ -1,25 +1,17 @@
 <script>
-import { allAmounts, allMonths } from './holtWintersLine.vue'
-
-export let seasonCoefficientForYear = []
-
-for (let i = 0; i < 12; i++) {
-	seasonCoefficientForYear.push(1)
-}
-
-console.log(
-	'Коэффициент сезонности предыдущего периода:',
-	seasonCoefficientForYear
-)
+// import {
+// 	seasonCoefficientForYear,
+// 	allMonths,
+// } from '../controllers/holtWintersController.vue'
 
 export const data = {
-	labels: allMonths,
+	labels: [],
 	datasets: [
 		{
 			label: 'Сезонность',
 			borderColor: '#2ec700',
 			backgroundColor: '#2ec700',
-			data: seasonCoefficientForYear,
+			data: [],
 		},
 	],
 }
