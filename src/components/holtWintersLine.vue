@@ -1,29 +1,65 @@
-<script>
+<template>
+	<div>
+		<div class="titelForBlock">Прогноз продаж методом Хольта-Винтерса</div>
+		<div></div>
+		<div class="forecastLine">
+			<Line :data="data" :options="options" />
+		</div>
+	</div>
+</template>
+
+<script setup>
+import { ref } from 'vue'
 import { allAmounts, allMonths } from '../controllers/holtWintersController.vue'
 
-export const data = {
-	labels: [],
+import {
+	Chart as ChartJS,
+	CategoryScale,
+	LinearScale,
+	PointElement,
+	LineElement,
+	Title,
+	Tooltip,
+	Legend,
+} from 'chart.js'
+import { Line } from 'vue-chartjs'
+
+// Регистрация компонентов Chart.js
+ChartJS.register(
+	CategoryScale,
+	LinearScale,
+	PointElement,
+	LineElement,
+	Title,
+	Tooltip,
+	Legend
+)
+
+const forecastPeriod = ref(2)
+
+// Определение реактивных данных
+const data = ref({
+	labels: allMonths,
 	datasets: [
 		{
 			label: 'Продажи',
 			borderColor: 'rgb(34, 110, 223)',
 			backgroundColor: 'rgba(34, 110, 223, 0.5)',
-			data: [],
+			data: allAmounts,
 		},
 		{
 			label: 'Прогноз',
-			data: [],
+			data: [], // Здесь будут прогнозные данные
 			borderColor: 'rgb(255, 87, 127)',
-
 			backgroundColor: 'rgba(255, 87, 127, 0.5)',
 		},
 	],
-}
+})
 
-export const options = {
+// Опции для графика
+const options = {
 	responsive: true,
 	maintainAspectRatio: false,
-	lineSmooth: false,
 	scales: {
 		y: {
 			type: 'linear',
@@ -39,7 +75,6 @@ export const options = {
 				borderDash: [5, 5],
 			},
 		},
-
 		x: {
 			type: 'category',
 			ticks: {
